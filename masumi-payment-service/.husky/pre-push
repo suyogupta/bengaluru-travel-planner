@@ -1,0 +1,134 @@
+#!/usr/bin/env sh
+
+# Portable and safe way to handle colors
+if command -v tput >/dev/null 2>&1 && [ -t 1 ]; then
+    # We have tput and it's an interactive terminal
+    if tput setaf 1 >/dev/null 2>&1; then
+        GREEN=$(tput setaf 2)
+        RED=$(tput setaf 1)
+        BLUE=$(tput setaf 4)
+        YELLOW=$(tput setaf 3)
+        NC=$(tput sgr0)
+    else
+        GREEN=""
+        RED=""
+        BLUE=""
+        YELLOW=""
+        NC=""
+    fi
+else
+    GREEN=""
+    RED=""
+    BLUE=""
+    YELLOW=""
+    NC=""
+fi
+
+# Check if we're in a git repository
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "${RED}❌ Not a git repository${NC}"
+    exit 1
+fi
+
+# Check if npm is available
+if ! command -v npm >/dev/null 2>&1; then
+    echo "${RED}❌ npm is not installed or not in PATH${NC}"
+    exit 2
+fi
+
+# Protected branches
+protected_branches="^(main|dev)$"
+
+# Get the current branch in a cross-platform way
+current_branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD)
+
+# Read standard input in a while loop
+while IFS= read -r line || [ -n "$line" ]; do
+    if [ -z "$line" ]; then
+        continue
+    fi
+    
+    # Split the line into components safely
+    local_ref=$(echo "$line" | cut -d' ' -f1)
+    local_sha=$(echo "$line" | cut -d' ' -f2)
+    remote_ref=$(echo "$line" | cut -d' ' -f3)
+    remote_sha=$(echo "$line" | cut -d' ' -f4)
+    
+    # Extract branch name from ref
+    remote_branch=${remote_ref##*/}
+    
+    if echo "$remote_branch" | grep -qE "$protected_branches"; then
+        echo "${RED}❌ Direct push to $remote_branch branch is not allowed${NC}"
+        echo "${YELLOW}Please create a pull request instead.${NC}"
+        exit 3
+    fi
+done
+
+# Run tests with proper error handling
+echo "${BLUE}🔍 Running test suite...${NC}"
+if ! npm run test; then
+    echo "${RED}❌ Tests failed. Please fix failing tests and try again.${NC}"
+    exit 4
+fi
+
+# TypeScript build check
+echo "${BLUE}🔍 Running TypeScript compilation check...${NC}"
+if ! npm run build; then
+    echo "${RED}❌ TypeScript compilation failed. Please fix type errors and try again.${NC}"
+    exit 5
+fi
+
+# Security audit with better error handling
+echo "${BLUE}🔍 Running security audit...${NC}"
+if npm audit --audit-level=high --json >/dev/null 2>&1; then
+    echo "${GREEN}✅ No high severity vulnerabilities found${NC}"
+else
+    echo "${YELLOW}⚠️ Security vulnerabilities found. Please review:${NC}"
+    echo "${YELLOW}1. Run 'npm audit' to see details${NC}"
+    echo "${YELLOW}2. Run 'npm audit fix' to fix automatically fixable issues${NC}"
+    echo "${YELLOW}3. Review and update packages with manual fixes required${NC}"
+    # Note: We don't exit here as this is a warning
+fi
+
+# Check for outdated dependencies
+echo "${BLUE}🔍 Checking for outdated dependencies...${NC}"
+if ! npm outdated --json >/dev/null 2>&1; then
+    echo "${YELLOW}⚠️ Some dependencies are outdated. Consider updating them.${NC}"
+    # Note: We don't exit here as this is informational
+fi
+
+# Generate Swagger documentation
+echo "${BLUE}🔍 Generating Swagger documentation...${NC}"
+if ! npm run swagger-json; then
+    echo "${RED}❌ Swagger documentation generation failed. Please fix any API documentation issues and try again.${NC}"
+    exit 6
+fi
+
+# Generate types
+echo "${BLUE}🔍 Generating types...${NC}"
+cd frontend && npm run openapi-ts-latest && cd ..
+if [ $? -ne 0 ]; then
+    echo "${RED}❌ Type generation for the frontend failed. Please fix errors and try again.${NC}"
+    exit 7
+fi
+
+# TypeScript build check
+echo "${BLUE}🔍 Running Frontend TypeScript compilation check...${NC}"
+cd frontend && npm run build && cd ..
+if [ $? -ne 0 ]; then
+    echo "${RED}❌ TypeScript frontend compilation failed. Please fix type errors and try again.${NC}"
+    exit 8
+fi
+
+# Check for changes in generated files
+echo "${BLUE}🔍 Checking for generated file changes...${NC}"
+if git diff --quiet; then
+    echo "${GREEN}✅ No changes in generated files${NC}"
+else
+    echo "${BLUE}📝 Committing generated file changes...${NC}"
+    git add .
+    git commit -m "chore: update generated files" --no-verify
+    echo "${GREEN}✅ Generated files committed${NC}"
+fi
+
+echo "${GREEN}✅ All pre-push checks completed!${NC}" 

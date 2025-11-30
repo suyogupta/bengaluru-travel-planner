@@ -1,0 +1,27 @@
+databases:
+  - name: masumi-db
+    databaseName: masumi_payment
+    user: masumi
+
+services:
+  - type: web
+    name: masumi-payment-service
+    runtime: node
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && npm run start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: masumi-db
+          property: connectionString
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: ADMIN_KEY
+        sync: false
+      - key: BLOCKFROST_API_KEY_PREPROD
+        sync: false
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /api/v1/health

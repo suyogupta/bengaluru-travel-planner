@@ -1,0 +1,29 @@
+# node modules
+node_modules
+# build path
+dist/*
+# environmental variables
+/.env
+.env
+.env.local
+# yarn error log
+yarn-error.log
+# vscode config
+.vscode
+#coverage
+coverage
+src/utils/.DS_Store
+src/services/.DS_Store
+.DS_Store
+# claude config
+.claude
+
+frontend/.env
+smart-contracts/registry/wallet1.addr
+smart-contracts/registry/wallet1.sk
+.env.*
+!.env.example
+smart-contracts/payment/wallet_2_.sk
+smart-contracts/payment/wallet_2_.addr
+
+otelcol-contrib

@@ -1,0 +1,58 @@
+name: Test-runner
+on:
+  pull_request:
+    branches:
+      - dev
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Backend Dependencies
+        run: npm install
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
+
+      - name: Run Jest
+        run: npm run test
+
+      - name: Run Build
+        run: npm run build
+
+      - name: Run Open API Generator
+        run: npm run swagger-json
+
+      - name: Run ESLint for issues
+        id: lint_fix_remaining
+        run: |
+          npx eslint --fix --config eslint.config.mjs > lint-results.txt || true
+
+      - name: Check Lint Results File
+        run: |
+          if [ -s lint-results.txt ]; then echo "Lint issues found. Please fix them." && exit 1; fi
+
+      - name: Install Frontend Dependencies
+        run: cd frontend && npm install
+
+      - name: Generate OpenAPI Types
+        run: cd frontend && npm run openapi-ts-latest
+
+      - name: Run Next Build
+        run: cd frontend && npm run build
