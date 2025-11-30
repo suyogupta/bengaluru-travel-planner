@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: bengaluru-travel-planner
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: BLOCKFROST_API_KEY
+        sync: false
+      - key: BLOCKFROST_NETWORK
+        value: preprod
+      - key: MASUMI_API_URL
+        sync: false
+      - key: MASUMI_API_KEY
+        sync: false
+      - key: PINATA_JWT
+        sync: false
+    healthCheckPath: /
