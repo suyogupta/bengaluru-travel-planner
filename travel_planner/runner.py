@@ -6,13 +6,21 @@ Simple interface to run the multi-agent travel planner.
 
 import os
 import asyncio
+import logging
 from typing import Optional
 from dataclasses import dataclass
 from google.adk.runners import InMemoryRunner
 
+# Configure logging
+logger = logging.getLogger("travel_planner")
+logger.setLevel(logging.INFO)
+
 # Set API key before importing agents
 if "GOOGLE_API_KEY" not in os.environ:
+    logger.error("GOOGLE_API_KEY environment variable is not set!")
     raise EnvironmentError("Please set GOOGLE_API_KEY environment variable")
+else:
+    logger.info("GOOGLE_API_KEY is configured")
 
 from .travel_agents import itinerary_coordinator, get_all_agents
 
@@ -116,6 +124,9 @@ class TravelPlannerRunner:
         session_id = f"session_{uuid.uuid4().hex[:8]}"
         app_name = "travel_planner"
 
+        logger.info(f"[SESSION {session_id}] Starting agent execution")
+        logger.info(f"[SESSION {session_id}] Query: {query_string[:100]}...")
+
         if self.debug:
             print(f"\n{'='*60}")
             print("TRAVEL PLANNER - Debug Mode")
@@ -124,46 +135,62 @@ class TravelPlannerRunner:
             print(f"Session: {session_id}")
             print(f"{'='*60}\n")
 
-        # Create session service and session explicitly
-        session_service = InMemorySessionService()
-        session = await session_service.create_session(
-            app_name=app_name,
-            user_id=user_id,
-            session_id=session_id,
-        )
+        try:
+            # Create session service and session explicitly
+            logger.info(f"[SESSION {session_id}] Creating InMemorySessionService...")
+            session_service = InMemorySessionService()
+            session = await session_service.create_session(
+                app_name=app_name,
+                user_id=user_id,
+                session_id=session_id,
+            )
+            logger.info(f"[SESSION {session_id}] Session created successfully")
 
-        # Create Runner with explicit session service
-        runner = Runner(
-            agent=itinerary_coordinator,
-            app_name=app_name,
-            session_service=session_service,
-        )
+            # Create Runner with explicit session service
+            logger.info(f"[SESSION {session_id}] Creating Runner with itinerary_coordinator...")
+            runner = Runner(
+                agent=itinerary_coordinator,
+                app_name=app_name,
+                session_service=session_service,
+            )
+            logger.info(f"[SESSION {session_id}] Runner created successfully")
 
-        # Create proper message content object
-        user_message = types.Content(
-            role="user",
-            parts=[types.Part.from_text(text=query_string)]
-        )
+            # Create proper message content object
+            user_message = types.Content(
+                role="user",
+                parts=[types.Part.from_text(text=query_string)]
+            )
 
-        result_text = ""
+            result_text = ""
+            event_count = 0
 
-        async for event in runner.run_async(
-            user_id=user_id,
-            session_id=session_id,
-            new_message=user_message,
-        ):
-            if hasattr(event, 'content') and event.content:
-                if hasattr(event.content, 'parts'):
-                    for part in event.content.parts:
-                        if hasattr(part, 'text') and part.text:
-                            result_text += part.text
-                            if self.debug:
-                                print(part.text, end="", flush=True)
+            logger.info(f"[SESSION {session_id}] Starting run_async - calling AI agents...")
+            async for event in runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=user_message,
+            ):
+                event_count += 1
+                if hasattr(event, 'content') and event.content:
+                    if hasattr(event.content, 'parts'):
+                        for part in event.content.parts:
+                            if hasattr(part, 'text') and part.text:
+                                result_text += part.text
+                                if self.debug:
+                                    print(part.text, end="", flush=True)
 
-        if self.debug:
-            print(f"\n{'='*60}\n")
+            logger.info(f"[SESSION {session_id}] run_async completed - {event_count} events, {len(result_text)} chars result")
 
-        return result_text
+            if self.debug:
+                print(f"\n{'='*60}\n")
+
+            return result_text
+
+        except Exception as e:
+            logger.error(f"[SESSION {session_id}] AGENT ERROR: {str(e)}")
+            import traceback
+            logger.error(f"[SESSION {session_id}] Traceback:\n{traceback.format_exc()}")
+            raise
 
 
 # =============================================================================

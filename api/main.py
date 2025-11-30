@@ -4,10 +4,32 @@ MIP-003 Compatible Endpoints + Custom Features
 """
 
 import os
+import logging
+import sys
+
+# Configure logging for production visibility
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger("travel_api")
+logger.setLevel(logging.INFO)
 
 # Load environment variables FIRST before any other imports
 from dotenv import load_dotenv
 load_dotenv()
+
+logger.info("=" * 60)
+logger.info("TRAVEL PLANNER API STARTING")
+logger.info("=" * 60)
+logger.info(f"GOOGLE_API_KEY set: {bool(os.getenv('GOOGLE_API_KEY'))}")
+logger.info(f"BLOCKFROST_API_KEY set: {bool(os.getenv('BLOCKFROST_API_KEY'))}")
+logger.info(f"MASUMI_API_URL: {os.getenv('MASUMI_API_URL', 'http://localhost:3001')}")
+logger.info(f"MASUMI_API_KEY set: {bool(os.getenv('MASUMI_API_KEY'))}")
+logger.info("=" * 60)
 
 # Now import the rest
 import uuid
@@ -237,9 +259,13 @@ FEEDBACK_REWARD_ADA = 0.5  # Reward per verified feedback
 
 async def run_agent(job_id: str, request: ItineraryRequest):
     """Run the travel planner agent asynchronously using TravelPlannerRunner"""
+    logger.info(f"[JOB {job_id}] Starting agent run")
+    logger.info(f"[JOB {job_id}] Request: location={request.location}, date={request.date_of_plan}, people={request.number_of_people}")
+
     try:
         jobs_db[job_id]["status"] = JobStatus.PROCESSING
         jobs_db[job_id]["progress"] = 10
+        logger.info(f"[JOB {job_id}] Status: PROCESSING (10%)")
 
         # Convert API request to TravelQuery
         query = TravelQuery(
@@ -256,18 +282,23 @@ async def run_agent(job_id: str, request: ItineraryRequest):
             transport_mode=request.transport_mode,
             remarks=request.remarks,
         )
+        logger.info(f"[JOB {job_id}] TravelQuery created: {query.to_query_string()}")
 
         jobs_db[job_id]["progress"] = 20
         jobs_db[job_id]["message"] = "Initializing travel planner agents..."
+        logger.info(f"[JOB {job_id}] Initializing TravelPlannerRunner...")
 
         # Use the actual TravelPlannerRunner
         runner = TravelPlannerRunner(debug=False)
+        logger.info(f"[JOB {job_id}] TravelPlannerRunner initialized")
 
         jobs_db[job_id]["progress"] = 40
         jobs_db[job_id]["message"] = "Researching attractions, events, transport..."
+        logger.info(f"[JOB {job_id}] Starting plan_trip() - calling AI agents...")
 
         # Run the agent
         result_text = await runner.plan_trip(query)
+        logger.info(f"[JOB {job_id}] plan_trip() completed, result length: {len(result_text)} chars")
 
         jobs_db[job_id]["progress"] = 100
         jobs_db[job_id]["status"] = JobStatus.COMPLETED
@@ -285,12 +316,16 @@ async def run_agent(job_id: str, request: ItineraryRequest):
             },
             "generated_at": datetime.now().isoformat(),
         }
+        logger.info(f"[JOB {job_id}] SUCCESS - Job completed!")
 
     except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
+        logger.error(f"[JOB {job_id}] FAILED - Error: {str(e)}")
+        logger.error(f"[JOB {job_id}] Traceback:\n{error_traceback}")
         jobs_db[job_id]["status"] = JobStatus.FAILED
         jobs_db[job_id]["error"] = str(e)
-        import traceback
-        jobs_db[job_id]["traceback"] = traceback.format_exc()
+        jobs_db[job_id]["traceback"] = error_traceback
 
 
 # ============== MIP-003 Endpoints ==============
