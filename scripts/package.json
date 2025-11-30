@@ -1,0 +1,10 @@
+{
+  "name": "cardano-reward-scripts",
+  "version": "1.0.0",
+  "description": "Cardano reward transaction scripts using MeshSDK",
+  "main": "send_ada_reward.js",
+  "type": "commonjs",
+  "dependencies": {
+    "@meshsdk/core": "^1.7.7"
+  }
+}

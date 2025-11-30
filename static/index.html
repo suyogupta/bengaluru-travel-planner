@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bengaluru Travel Planner - Pay 2 ADA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0033AD;
+            --secondary: #00D4AA;
+            --accent: #FF6B35;
+            --bg-dark: #0F172A;
+            --bg-card: #1E293B;
+            --text: #F1F5F9;
+            --text-muted: #94A3B8;
+            --border: #334155;
+            --success: #10B981;
+            --warning: #F59E0B;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-dark); color: var(--text); min-height: 100vh; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, #1E40AF 100%);
+            border-radius: 0 0 20px 20px;
+            margin-bottom: 30px;
+        }
+        .logo { font-size: 2rem; font-weight: 700; }
+        .tagline { color: var(--secondary); margin-top: 5px; }
+        .price-badge {
+            display: inline-block;
+            background: var(--accent);
+            padding: 8px 20px;
+            border-radius: 20px;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; color: var(--secondary); }
+
+        .step { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .step-number {
+            background: var(--primary);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .step.completed .step-number { background: var(--success); }
+        .step.active .step-number { background: var(--accent); }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem; }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        input:focus, select:focus { border-color: var(--primary); outline: none; }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #0044CC; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: black; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .wallet-address {
+            background: var(--bg-dark);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            border: 2px dashed var(--border);
+        }
+        .copy-btn {
+            background: var(--secondary);
+            color: black;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+
+        .status-box {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .status-pending { background: rgba(245, 158, 11, 0.2); border: 1px solid var(--warning); }
+        .status-success { background: rgba(16, 185, 129, 0.2); border: 1px solid var(--success); }
+        .status-error { background: rgba(239, 68, 68, 0.2); border: 1px solid #EF4444; }
+
+        .result-box {
+            background: var(--bg-dark);
+            padding: 20px;
+            border-radius: 10px;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        .hidden { display: none !important; }
+
+        /* Tab Navigation */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: var(--bg-card);
+            padding: 8px;
+            border-radius: 12px;
+        }
+        .tab {
+            flex: 1;
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+        .tab:hover:not(.active) {
+            background: rgba(0,51,173,0.2);
+            color: var(--text);
+        }
+
+        /* Diary Styles */
+        .diary-entry {
+            background: var(--bg-dark);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 3px solid var(--secondary);
+        }
+        .diary-entry .title {
+            font-weight: 600;
+            color: var(--secondary);
+            margin-bottom: 5px;
+        }
+        .diary-entry .meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        .diary-entry .content {
+            color: var(--text);
+            line-height: 1.5;
+        }
+        .diary-entry .score {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background: rgba(16, 185, 129, 0.2);
+            border-radius: 5px;
+            display: inline-block;
+            font-size: 0.85rem;
+        }
+        .diary-entry .score.rewarded {
+            background: rgba(255, 215, 0, 0.2);
+            color: gold;
+        }
+
+        .reward-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 15px;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: black;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .loader {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--secondary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .info-box {
+            background: rgba(0, 212, 170, 0.1);
+            border: 1px solid var(--secondary);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .info-box h4 { color: var(--secondary); margin-bottom: 10px; }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .checkbox-item:hover {
+            border-color: var(--primary);
+            background: rgba(0, 51, 173, 0.1);
+        }
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            accent-color: var(--secondary);
+        }
+        .checkbox-item input[type="checkbox"]:checked + span,
+        .checkbox-item:has(input:checked) {
+            color: var(--secondary);
+        }
+
+        /* Gallery Styles */
+        .gallery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .gallery-stats {
+            display: flex;
+            gap: 20px;
+        }
+        .gallery-stat {
+            text-align: center;
+            padding: 10px 20px;
+            background: var(--bg-dark);
+            border-radius: 10px;
+        }
+        .gallery-stat .number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+        .gallery-stat .label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .gallery-card {
+            background: var(--bg-dark);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .gallery-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 212, 170, 0.15);
+            border-color: var(--secondary);
+        }
+        .gallery-card.rewarded {
+            border-color: gold;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, rgba(255, 215, 0, 0.05) 100%);
+        }
+        .gallery-card-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            background: var(--bg-card);
+        }
+        .gallery-card-image-placeholder {
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 2rem;
+        }
+        .gallery-card-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        .gallery-card-title {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+        .gallery-card-location {
+            color: var(--secondary);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .gallery-card-body {
+            padding: 15px;
+        }
+        .gallery-card-content {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .gallery-card-footer {
+            padding: 12px 15px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .gallery-card-score {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+        }
+        .gallery-card-score.high { color: var(--success); }
+        .gallery-card-score.medium { color: var(--warning); }
+        .gallery-card-score.low { color: #EF4444; }
+        .gallery-card-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .gallery-card-reward {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: black;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 16px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .modal-close {
+            background: var(--bg-dark);
+            border: none;
+            color: var(--text);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-close:hover { background: var(--border); }
+        .modal-body {
+            padding: 20px;
+        }
+        .modal-section {
+            margin-bottom: 20px;
+        }
+        .modal-section-title {
+            color: var(--secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .modal-story {
+            color: var(--text);
+            line-height: 1.7;
+            white-space: pre-wrap;
+        }
+        .modal-feedback {
+            background: var(--bg-dark);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 3px solid var(--secondary);
+        }
+        .modal-score-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+        .modal-score-badge.rewarded {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 165, 0, 0.2) 100%);
+            border: 1px solid gold;
+            color: gold;
+        }
+        .modal-score-badge.not-rewarded {
+            background: rgba(148, 163, 184, 0.2);
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+        }
+
+        /* Blockchain Links Styles */
+        .blockchain-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 15px;
+            background: var(--bg-dark);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+        .blockchain-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            background: rgba(0, 51, 173, 0.1);
+            border-radius: 8px;
+            color: var(--text);
+            text-decoration: none;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .blockchain-link:hover {
+            background: rgba(0, 51, 173, 0.2);
+            border-color: var(--primary);
+        }
+        .blockchain-link .icon {
+            font-size: 1.2rem;
+        }
+        .blockchain-link .label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        .blockchain-link .value {
+            font-family: monospace;
+            color: var(--secondary);
+            word-break: break-all;
+        }
+        .blockchain-link.ipfs {
+            background: rgba(0, 212, 170, 0.1);
+        }
+        .blockchain-link.ipfs:hover {
+            background: rgba(0, 212, 170, 0.2);
+        }
+        .blockchain-link.cardano {
+            background: rgba(0, 51, 173, 0.1);
+        }
+        .blockchain-link.cardano:hover {
+            background: rgba(0, 51, 173, 0.2);
+        }
+        .content-hash {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Bengaluru Travel Planner</div>
+        <div class="tagline">AI-Powered Itinerary Generator on Cardano</div>
+        <div class="price-badge">2 ADA per Itinerary</div>
+    </header>
+
+    <div class="container">
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('planner')">🗺️ Plan Trip</button>
+            <button class="tab" onclick="switchTab('diary')">📔 Travel Diary</button>
+        </div>
+
+        <!-- Tab: Trip Planner -->
+        <div id="tab-planner">
+            <!-- Info Box -->
+            <div class="info-box">
+                <h4>How it works</h4>
+                <p>1. Fill in your trip details → 2. Pay 2 ADA (test ADA on Preprod) → 3. Get your AI-generated itinerary!</p>
+                <p style="margin-top:10px; color: var(--text-muted); font-size: 0.9rem;">
+                    Network: <strong>Cardano Preprod (Testnet)</strong> | Need test ADA?
+                    <a href="https://docs.cardano.org/cardano-testnets/tools/faucet/" target="_blank" style="color: var(--secondary);">Get from faucet</a>
+                </p>
+            </div>
+
+            <!-- Step 1: Trip Details -->
+        <div class="card" id="step1">
+            <div class="step active" id="step1-indicator">
+                <div class="step-number">1</div>
+                <div>
+                    <strong>Enter Trip Details</strong>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Tell us about your Bengaluru adventure</p>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Date of Plan *</label>
+                    <input type="date" id="date_of_plan" required>
+                </div>
+                <div class="form-group">
+                    <label>Start Time</label>
+                    <select id="start_time">
+                        <option value="9 AM">9 AM</option>
+                        <option value="10 AM" selected>10 AM</option>
+                        <option value="11 AM">11 AM</option>
+                        <option value="12 PM">12 PM</option>
+                        <option value="2 PM">2 PM</option>
+                        <option value="5 PM">5 PM</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Starting Location *</label>
+                    <input type="text" id="location" placeholder="e.g., HSR Layout, Koramangala" required>
+                </div>
+                <div class="form-group">
+                    <label>Plan Type</label>
+                    <select id="plan_type">
+                        <option value="fullday">Full Day</option>
+                        <option value="morning">Morning Only</option>
+                        <option value="evening">Evening Only</option>
+                        <option value="night">Night Out</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Group Type</label>
+                    <select id="people">
+                        <option value="friends">Friends</option>
+                        <option value="family">Family</option>
+                        <option value="couple">Couple</option>
+                        <option value="solo">Solo</option>
+                        <option value="corporate">Corporate</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Number of People</label>
+                    <input type="number" id="number_of_people" value="4" min="1" max="50">
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Occasion</label>
+                    <select id="occasion">
+                        <option value="">-- Select (Optional) --</option>
+                        <option value="casual">Casual Outing</option>
+                        <option value="weekend fun">Weekend Fun</option>
+                        <option value="birthday">Birthday</option>
+                        <option value="anniversary">Anniversary</option>
+                        <option value="celebration">Celebration</option>
+                        <option value="date">Date</option>
+                        <option value="team outing">Team Outing</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Transport Mode</label>
+                    <select id="transport_mode">
+                        <option value="">-- Select (Optional) --</option>
+                        <option value="cab">Cab (Uber/Ola)</option>
+                        <option value="auto">Auto Rickshaw</option>
+                        <option value="metro">Metro</option>
+                        <option value="mixed">Mixed Transport</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>What would you like to include? (Select multiple)</label>
+                <div class="checkbox-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 8px;">
+                    <label class="checkbox-item"><input type="checkbox" value="food" checked> 🍽️ Food & Cafes</label>
+                    <label class="checkbox-item"><input type="checkbox" value="nature"> 🌳 Nature & Parks</label>
+                    <label class="checkbox-item"><input type="checkbox" value="temple"> 🛕 Temples</label>
+                    <label class="checkbox-item"><input type="checkbox" value="shopping"> 🛍️ Shopping</label>
+                    <label class="checkbox-item"><input type="checkbox" value="museum"> 🏛️ Museums</label>
+                    <label class="checkbox-item"><input type="checkbox" value="adventure"> 🎢 Adventure</label>
+                    <label class="checkbox-item"><input type="checkbox" value="lake"> 🌊 Lakes</label>
+                    <label class="checkbox-item"><input type="checkbox" value="brewery"> 🍺 Breweries</label>
+                    <label class="checkbox-item"><input type="checkbox" value="historical"> 🏰 Historical</label>
+                    <label class="checkbox-item"><input type="checkbox" value="art"> 🎨 Art & Culture</label>
+                    <label class="checkbox-item"><input type="checkbox" value="nightlife"> 🌙 Nightlife</label>
+                    <label class="checkbox-item"><input type="checkbox" value="zoo"> 🦁 Zoo</label>
+                    <label class="checkbox-item"><input type="checkbox" value="events"> 🎪 City Events</label>
+                    <label class="checkbox-item"><input type="checkbox" value="custom" id="custom-checkbox"> ✏️ Custom</label>
+                </div>
+                <div id="custom-input-wrapper" style="display: none; margin-top: 10px;">
+                    <input type="text" id="custom_inclusion" placeholder="Type your custom activity (e.g., pottery class, escape room...)" style="width: 100%;">
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Budget (INR) - Optional</label>
+                    <input type="number" id="budget" placeholder="e.g., 5000">
+                </div>
+                <div class="form-group">
+                    <label>Budget Mode</label>
+                    <select id="budget_mode">
+                        <option value="flexible">Flexible (can exceed)</option>
+                        <option value="strict">Strict (stay within)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Special Requests (Optional)</label>
+                <textarea id="remarks" rows="2" placeholder="e.g., Prefer outdoor activities, vegetarian food only, wheelchair accessible..."></textarea>
+            </div>
+
+            <button class="btn btn-primary" onclick="proceedToPayment()">Proceed to Payment →</button>
+        </div>
+
+        <!-- Step 2: Payment -->
+        <div class="card hidden" id="step2">
+            <div class="step active" id="step2-indicator">
+                <div class="step-number">2</div>
+                <div>
+                    <strong>Pay 2 ADA</strong>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">Send payment to unlock your itinerary</p>
+                </div>
+            </div>
+
+            <p style="margin-bottom: 15px;">Send exactly <strong style="color: var(--accent);">2 ADA</strong> to this wallet address:</p>
+
+            <div class="wallet-address" id="wallet-address">
+                addr_test1qrdcyfry5wzlefwzaqlrj8x6epzce6rhunwdntpg39ds0tlal6a39g8umszr36axxktf787x90wfk3ahwgt2c4efpdjq5tuzn6
+            </div>
+            <button class="copy-btn" onclick="copyAddress()">📋 Copy Address</button>
+
+            <div style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+                <p style="font-size: 0.9rem; color: var(--text-muted);">
+                    <strong>Instructions:</strong><br>
+                    1. Open your Nami/Eternl wallet<br>
+                    2. Make sure you're on <strong>Preprod</strong> network<br>
+                    3. Send 2 ADA to the address above<br>
+                    4. Wait for confirmation (~30 seconds)<br>
+                    5. Copy your transaction hash and paste below
+                </p>
+            </div>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label>Transaction Hash *</label>
+                <input type="text" id="tx_hash" placeholder="Paste your transaction hash here (e.g., abc123...)">
+            </div>
+
+            <button class="btn btn-success" onclick="verifyPayment()">✓ Verify Payment & Generate Itinerary</button>
+            <button class="btn" style="background: var(--border); margin-left: 10px;" onclick="goBack()">← Back</button>
+        </div>
+
+        <!-- Step 3: Processing/Result -->
+        <div class="card hidden" id="step3">
+            <div class="step" id="step3-indicator">
+                <div class="step-number">3</div>
+                <div>
+                    <strong>Your Itinerary</strong>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;" id="step3-status">Processing...</p>
+                </div>
+            </div>
+
+            <div id="processing-box" class="status-box status-pending">
+                <div class="loader"></div>
+                <p>Verifying payment & generating your itinerary...</p>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 10px;">This may take 1-2 minutes</p>
+            </div>
+
+            <div id="result-box" class="hidden">
+                <div class="status-box status-success" style="margin-bottom: 20px;">
+                    <p style="font-size: 1.2rem;">✅ Payment Verified!</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;" id="payment-info"></p>
+                </div>
+                <h3 style="margin-bottom: 15px; color: var(--secondary);">Your Bengaluru Itinerary</h3>
+                <div class="result-box" id="itinerary-content"></div>
+            </div>
+
+            <div id="error-box" class="hidden">
+                <div class="status-box status-error">
+                    <p style="font-size: 1.2rem;">❌ Error</p>
+                    <p id="error-message"></p>
+                </div>
+                <button class="btn btn-primary" style="margin-top: 15px;" onclick="goBack()">← Try Again</button>
+            </div>
+        </div>
+
+        </div> <!-- End tab-planner -->
+
+        <!-- Tab: Travel Diary -->
+        <div id="tab-diary" class="hidden">
+            <!-- Diary Info Box -->
+            <div class="info-box">
+                <h4>Travel Diary - Earn 1 ADA!</h4>
+                <p>Share your Bengaluru travel experiences! Quality entries (scored by AI) earn 1 ADA reward.</p>
+                <p style="margin-top:10px; color: var(--text-muted); font-size: 0.9rem;">
+                    Limit: <strong>1 entry per wallet per day</strong> | Quality threshold: <strong>Score 7+</strong>
+                </p>
+            </div>
+
+            <!-- Diary Submission Form -->
+            <div class="card" id="diary-form-card">
+                <h3 class="card-title">Submit Your Travel Story</h3>
+
+                <div class="form-group">
+                    <label>Wallet Address *</label>
+                    <input type="text" id="diary_wallet" placeholder="addr_test1... (your Cardano Preprod address)">
+                    <small style="color: var(--text-muted);">This is where your reward will be sent</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Title *</label>
+                    <input type="text" id="diary_title" placeholder="e.g., Amazing Day at Cubbon Park" maxlength="100">
+                </div>
+
+                <div class="form-group">
+                    <label>Location *</label>
+                    <input type="text" id="diary_location" placeholder="e.g., Cubbon Park, MG Road">
+                </div>
+
+                <div class="form-group">
+                    <label>Your Travel Story * (min 50 chars)</label>
+                    <textarea id="diary_content" rows="5" placeholder="Describe your travel experience in Bengaluru. What did you see? What did you eat? How did it make you feel? The more detailed and genuine, the higher your score!"></textarea>
+                    <small style="color: var(--text-muted);"><span id="char-count">0</span>/5000 characters</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Upload Travel Photo (recommended for higher score)</label>
+                    <input type="file" id="diary_image" accept="image/*" style="padding: 10px;">
+                    <img id="image-preview" class="image-preview" alt="Preview">
+                </div>
+
+                <div id="diary-status" class="hidden" style="margin-bottom: 15px;"></div>
+
+                <button class="btn btn-primary" onclick="submitDiary()" id="submit-diary-btn">Submit Diary Entry</button>
+                <button class="btn" style="background: var(--border); margin-left: 10px;" onclick="checkWalletStatus()">Check My Status</button>
+            </div>
+
+            <!-- Wallet Status Card -->
+            <div class="card hidden" id="wallet-status-card">
+                <h3 class="card-title">Your Stats</h3>
+                <div id="wallet-stats"></div>
+            </div>
+
+            <!-- Travel Stories Gallery -->
+            <div class="card">
+                <div class="gallery-header">
+                    <h3 class="card-title" style="margin-bottom: 0;">Travel Stories Gallery</h3>
+                    <div class="gallery-stats" id="gallery-stats"></div>
+                </div>
+                <div id="diary-entries-list" class="gallery-grid">
+                    <div class="loader"></div>
+                    <p style="text-align: center; color: var(--text-muted); grid-column: 1/-1;">Loading entries...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Story Detail Modal -->
+        <div class="modal-overlay" id="story-modal" onclick="closeModal(event)">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="modal-title" style="color: var(--text); margin-bottom: 5px;"></h2>
+                        <div id="modal-location" style="color: var(--secondary);"></div>
+                    </div>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-section">
+                        <div class="modal-section-title">The Story</div>
+                        <div id="modal-story" class="modal-story"></div>
+                    </div>
+                    <div class="modal-section">
+                        <div class="modal-section-title">AI Evaluation</div>
+                        <div id="modal-feedback" class="modal-feedback"></div>
+                    </div>
+                    <div class="modal-section" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div id="modal-score-badge" class="modal-score-badge"></div>
+                        <div id="modal-meta" style="color: var(--text-muted); font-size: 0.85rem;"></div>
+                    </div>
+                    <!-- Blockchain Storage Links -->
+                    <div class="modal-section" id="modal-blockchain-section" style="display: none;">
+                        <div class="modal-section-title">On-Chain Storage</div>
+                        <div class="blockchain-links" id="modal-blockchain-links"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; padding: 30px; color: var(--text-muted); font-size: 0.85rem;">
+            <p>Powered by Google Gemini AI | Payments on Cardano Blockchain</p>
+            <p style="margin-top: 5px;">
+                <a href="https://preprod.cardanoscan.io/address/addr_test1qrdcyfry5wzlefwzaqlrj8x6epzce6rhunwdntpg39ds0tlal6a39g8umszr36axxktf787x90wfk3ahwgt2c4efpdjq5tuzn6"
+                   target="_blank" style="color: var(--secondary);">
+                    View Wallet on Cardanoscan →
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // API Base URL - change this when deploying
+        const API_BASE = window.location.origin;
+
+        let currentJobId = null;
+        let tripData = {};
+
+        function proceedToPayment() {
+            // Validate required fields
+            const date = document.getElementById('date_of_plan').value;
+            const location = document.getElementById('location').value;
+
+            if (!date || !location) {
+                alert('Please fill in the required fields (Date and Location)');
+                return;
+            }
+
+            // Get selected inclusions
+            const inclusions = [];
+            document.querySelectorAll('.checkbox-grid input[type="checkbox"]:checked').forEach(cb => {
+                if (cb.value === 'custom') {
+                    // Add custom value if provided
+                    const customValue = document.getElementById('custom_inclusion').value.trim();
+                    if (customValue) {
+                        inclusions.push(customValue);
+                    }
+                } else {
+                    inclusions.push(cb.value);
+                }
+            });
+
+            // Store trip data
+            tripData = {
+                date_of_plan: formatDate(date),
+                start_time: document.getElementById('start_time').value,
+                location: location,
+                plan_type: document.getElementById('plan_type').value,
+                people: document.getElementById('people').value,
+                number_of_people: parseInt(document.getElementById('number_of_people').value),
+                occasion: document.getElementById('occasion').value || null,
+                transport_mode: document.getElementById('transport_mode').value || null,
+                inclusions: inclusions.length > 0 ? inclusions : null,
+                budget: document.getElementById('budget').value ? parseInt(document.getElementById('budget').value) : null,
+                budget_mode: document.getElementById('budget_mode').value,
+                remarks: document.getElementById('remarks').value || null
+            };
+
+            // Show step 2
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.remove('hidden');
+            document.getElementById('step1-indicator').classList.remove('active');
+            document.getElementById('step1-indicator').classList.add('completed');
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const options = { day: 'numeric', month: 'long', year: 'numeric' };
+            return date.toLocaleDateString('en-GB', options);
+        }
+
+        function copyAddress() {
+            const address = document.getElementById('wallet-address').textContent;
+            navigator.clipboard.writeText(address).then(() => {
+                alert('Address copied to clipboard!');
+            });
+        }
+
+        function goBack() {
+            document.getElementById('step1').classList.remove('hidden');
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.add('hidden');
+            document.getElementById('step1-indicator').classList.add('active');
+            document.getElementById('step1-indicator').classList.remove('completed');
+        }
+
+        async function verifyPayment() {
+            const txHash = document.getElementById('tx_hash').value.trim();
+
+            if (!txHash) {
+                alert('Please enter your transaction hash');
+                return;
+            }
+
+            // Show step 3
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+            document.getElementById('step2-indicator').classList.remove('active');
+            document.getElementById('step2-indicator').classList.add('completed');
+            document.getElementById('step3-indicator').classList.add('active');
+
+            // Reset result area
+            document.getElementById('processing-box').classList.remove('hidden');
+            document.getElementById('result-box').classList.add('hidden');
+            document.getElementById('error-box').classList.add('hidden');
+
+            try {
+                // Call API to start job with payment
+                const response = await fetch(`${API_BASE}/start_job`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        input_data: tripData,
+                        payment_tx_hash: txHash
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Payment verification failed');
+                }
+
+                currentJobId = data.job_id;
+
+                // Poll for result
+                pollForResult();
+
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        async function pollForResult() {
+            const maxAttempts = 60; // 2 minutes max
+            let attempts = 0;
+
+            const poll = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/status/${currentJobId}`);
+                    const data = await response.json();
+
+                    document.getElementById('step3-status').textContent = data.message || 'Processing...';
+
+                    if (data.status === 'completed') {
+                        // Get the result
+                        const resultResponse = await fetch(`${API_BASE}/result/${currentJobId}`);
+                        const resultData = await resultResponse.json();
+                        showResult(resultData);
+                        return;
+                    } else if (data.status === 'failed') {
+                        showError(data.message || 'Job failed');
+                        return;
+                    } else if (data.status === 'pending' && data.message && data.message.includes('failed')) {
+                        showError(data.message);
+                        return;
+                    }
+
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 2000); // Poll every 2 seconds
+                    } else {
+                        showError('Timeout waiting for result. Please check job status later.');
+                    }
+                } catch (error) {
+                    showError('Error checking status: ' + error.message);
+                }
+            };
+
+            poll();
+        }
+
+        function showResult(data) {
+            document.getElementById('processing-box').classList.add('hidden');
+            document.getElementById('result-box').classList.remove('hidden');
+            document.getElementById('step3-status').textContent = 'Complete!';
+            document.getElementById('step3-indicator').classList.add('completed');
+
+            document.getElementById('payment-info').textContent = `Transaction verified on Cardano Preprod`;
+            document.getElementById('itinerary-content').textContent = data.result?.itinerary || 'No itinerary generated';
+        }
+
+        function showError(message) {
+            document.getElementById('processing-box').classList.add('hidden');
+            document.getElementById('error-box').classList.remove('hidden');
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('step3-status').textContent = 'Error';
+        }
+
+        // Set default date to tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('date_of_plan').value = tomorrow.toISOString().split('T')[0];
+
+        // Toggle custom input visibility
+        document.getElementById('custom-checkbox').addEventListener('change', function() {
+            const wrapper = document.getElementById('custom-input-wrapper');
+            wrapper.style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                document.getElementById('custom_inclusion').value = '';
+            }
+        });
+
+        // ==================== DIARY FUNCTIONS ====================
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Show/hide tab content
+            if (tabName === 'planner') {
+                document.getElementById('tab-planner').classList.remove('hidden');
+                document.getElementById('tab-diary').classList.add('hidden');
+            } else {
+                document.getElementById('tab-planner').classList.add('hidden');
+                document.getElementById('tab-diary').classList.remove('hidden');
+                loadDiaryEntries(); // Load entries when switching to diary tab
+            }
+        }
+
+        // Store entries for modal access
+        let diaryEntriesData = [];
+
+        // Load recent diary entries
+        async function loadDiaryEntries() {
+            const container = document.getElementById('diary-entries-list');
+            const statsContainer = document.getElementById('gallery-stats');
+            container.innerHTML = '<div class="loader" style="grid-column: 1/-1;"></div><p style="text-align: center; color: var(--text-muted); grid-column: 1/-1;">Loading stories...</p>';
+
+            try {
+                const response = await fetch(`${API_BASE}/diary/entries`);
+                const data = await response.json();
+                diaryEntriesData = data.entries || [];
+
+                // Update gallery stats
+                const totalStories = diaryEntriesData.length;
+                const rewardedCount = diaryEntriesData.filter(e => e.is_rewarded).length;
+                statsContainer.innerHTML = `
+                    <div class="gallery-stat">
+                        <div class="number">${totalStories}</div>
+                        <div class="label">Stories</div>
+                    </div>
+                    <div class="gallery-stat">
+                        <div class="number" style="color: gold;">${rewardedCount}</div>
+                        <div class="label">Rewarded</div>
+                    </div>
+                `;
+
+                if (diaryEntriesData.length > 0) {
+                    container.innerHTML = diaryEntriesData.map((entry, index) => {
+                        const scoreClass = entry.quality_score >= 7 ? 'high' : entry.quality_score >= 5 ? 'medium' : 'low';
+                        const date = new Date(entry.created_at);
+                        const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                        // Image section - show IPFS image or placeholder
+                        let imageHtml = '';
+                        if (entry.image_ipfs_url) {
+                            imageHtml = `<img src="${escapeHtml(entry.image_ipfs_url)}" alt="Travel Photo" class="gallery-card-image" onerror="this.parentElement.innerHTML='<div class=\\'gallery-card-image-placeholder\\'>📷</div>'">`;
+                        } else {
+                            imageHtml = `<div class="gallery-card-image-placeholder">📷</div>`;
+                        }
+
+                        return `
+                        <div class="gallery-card ${entry.is_rewarded ? 'rewarded' : ''}" onclick="openStoryModal(${index})">
+                            ${imageHtml}
+                            <div class="gallery-card-header">
+                                <div class="gallery-card-title">${escapeHtml(entry.title)}</div>
+                                <div class="gallery-card-location">📍 ${escapeHtml(entry.location)}</div>
+                            </div>
+                            <div class="gallery-card-body">
+                                <div class="gallery-card-content">${escapeHtml(entry.content_preview || entry.content)}</div>
+                            </div>
+                            <div class="gallery-card-footer">
+                                <div class="gallery-card-score ${scoreClass}">
+                                    ⭐ ${entry.quality_score.toFixed(1)}/10
+                                </div>
+                                ${entry.is_rewarded ? '<span class="gallery-card-reward">🏆 1 ADA</span>' : ''}
+                                <div class="gallery-card-meta">${formattedDate}</div>
+                            </div>
+                        </div>
+                    `;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<p style="text-align: center; color: var(--text-muted); grid-column: 1/-1;">No travel stories yet. Be the first to share your adventure!</p>';
+                }
+            } catch (error) {
+                container.innerHTML = `<p style="text-align: center; color: #EF4444; grid-column: 1/-1;">Error loading stories: ${error.message}</p>`;
+            }
+        }
+
+        // Open story modal
+        function openStoryModal(index) {
+            const entry = diaryEntriesData[index];
+            if (!entry) return;
+
+            // Populate modal content
+            document.getElementById('modal-title').textContent = entry.title;
+            document.getElementById('modal-location').innerHTML = `📍 ${escapeHtml(entry.location)}`;
+            document.getElementById('modal-story').textContent = entry.content_full || entry.content;
+            document.getElementById('modal-feedback').textContent = entry.verification_feedback || 'No AI feedback available.';
+
+            // Score badge
+            const scoreBadge = document.getElementById('modal-score-badge');
+            if (entry.is_rewarded) {
+                scoreBadge.className = 'modal-score-badge rewarded';
+                scoreBadge.innerHTML = `🏆 Score: ${entry.quality_score.toFixed(1)}/10 - Earned 1 ADA!`;
+            } else {
+                scoreBadge.className = 'modal-score-badge not-rewarded';
+                scoreBadge.innerHTML = `⭐ Score: ${entry.quality_score.toFixed(1)}/10`;
+            }
+
+            // Meta info
+            const date = new Date(entry.created_at);
+            const formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            document.getElementById('modal-meta').innerHTML = `
+                👤 ${entry.wallet_short || 'Anonymous'}<br>
+                🕐 ${formattedDate}
+            `;
+
+            // Blockchain/IPFS links
+            const blockchainSection = document.getElementById('modal-blockchain-section');
+            const blockchainLinks = document.getElementById('modal-blockchain-links');
+
+            // Check if any blockchain data is available
+            const hasIpfs = entry.image_ipfs_url || entry.image_ipfs_hash;
+            const hasChain = entry.chain_tx_hash || entry.cardanoscan_url;
+            const hasContentHash = entry.content_hash;
+
+            if (hasIpfs || hasChain || hasContentHash) {
+                blockchainSection.style.display = 'block';
+                let linksHtml = '';
+
+                // IPFS Image Link
+                if (entry.image_ipfs_url) {
+                    linksHtml += `
+                        <a href="${escapeHtml(entry.image_ipfs_url)}" target="_blank" class="blockchain-link ipfs">
+                            <span class="icon">📦</span>
+                            <div>
+                                <div class="label">Photo on IPFS</div>
+                                <div class="value">${escapeHtml(entry.image_ipfs_hash || 'View on Gateway')}</div>
+                            </div>
+                        </a>
+                    `;
+                }
+
+                // Cardanoscan Transaction Link
+                if (entry.cardanoscan_url) {
+                    linksHtml += `
+                        <a href="${escapeHtml(entry.cardanoscan_url)}" target="_blank" class="blockchain-link cardano">
+                            <span class="icon">⛓️</span>
+                            <div>
+                                <div class="label">View on Cardanoscan</div>
+                                <div class="value">${entry.chain_tx_hash ? escapeHtml(entry.chain_tx_hash.substring(0, 20)) + '...' : 'View Transaction'}</div>
+                            </div>
+                        </a>
+                    `;
+                }
+
+                // Content Hash for verification
+                if (entry.content_hash) {
+                    linksHtml += `
+                        <div style="margin-top: 5px;">
+                            <div class="label" style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px;">Content Hash (SHA256)</div>
+                            <div class="content-hash">${escapeHtml(entry.content_hash)}</div>
+                        </div>
+                    `;
+                }
+
+                blockchainLinks.innerHTML = linksHtml;
+            } else {
+                blockchainSection.style.display = 'none';
+            }
+
+            // Show modal
+            document.getElementById('story-modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close modal
+        function closeModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('story-modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Submit diary entry
+        async function submitDiary() {
+            const wallet = document.getElementById('diary_wallet').value.trim();
+            const title = document.getElementById('diary_title').value.trim();
+            const location = document.getElementById('diary_location').value.trim();
+            const content = document.getElementById('diary_content').value.trim();
+            const imageInput = document.getElementById('diary_image');
+
+            // Validation
+            if (!wallet || !wallet.startsWith('addr')) {
+                showDiaryStatus('error', 'Please enter a valid Cardano wallet address (starts with addr)');
+                return;
+            }
+            if (!title || title.length < 5) {
+                showDiaryStatus('error', 'Please enter a title (at least 5 characters)');
+                return;
+            }
+            if (!location) {
+                showDiaryStatus('error', 'Please enter the location you visited');
+                return;
+            }
+            if (!content || content.length < 50) {
+                showDiaryStatus('error', 'Your travel story must be at least 50 characters');
+                return;
+            }
+
+            // Disable button and show loading
+            const btn = document.getElementById('submit-diary-btn');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+            showDiaryStatus('pending', 'Analyzing your diary entry with AI...');
+
+            try {
+                // Convert image to base64 if provided
+                let imageBase64 = null;
+                if (imageInput.files && imageInput.files[0]) {
+                    imageBase64 = await fileToBase64(imageInput.files[0]);
+                }
+
+                const response = await fetch(`${API_BASE}/diary/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wallet_address: wallet,
+                        title: title,
+                        location: location,
+                        content: content,
+                        image_base64: imageBase64
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Submission failed');
+                }
+
+                if (data.success) {
+                    let statusType = data.is_eligible_for_reward ? 'success' : 'warning';
+                    let message = `Score: ${data.quality_score.toFixed(1)}/10\n\n${data.feedback}`;
+
+                    if (data.reward_sent) {
+                        message += `\n\n🎉 1 ADA reward sent! TX: ${data.reward_tx_hash}`;
+                    }
+
+                    showDiaryStatus(statusType, message);
+
+                    // Clear form on success
+                    document.getElementById('diary_title').value = '';
+                    document.getElementById('diary_location').value = '';
+                    document.getElementById('diary_content').value = '';
+                    document.getElementById('diary_image').value = '';
+                    document.getElementById('image-preview').style.display = 'none';
+                    document.getElementById('char-count').textContent = '0';
+
+                    // Reload entries
+                    loadDiaryEntries();
+                } else {
+                    showDiaryStatus('error', data.feedback || data.error || 'Submission failed');
+                }
+            } catch (error) {
+                showDiaryStatus('error', error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit Diary Entry';
+            }
+        }
+
+        // Check wallet status
+        async function checkWalletStatus() {
+            const wallet = document.getElementById('diary_wallet').value.trim();
+
+            if (!wallet || !wallet.startsWith('addr')) {
+                showDiaryStatus('error', 'Please enter your wallet address first');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/diary/stats/${wallet}`);
+                const data = await response.json();
+
+                const statsCard = document.getElementById('wallet-status-card');
+                const statsDiv = document.getElementById('wallet-stats');
+
+                statsDiv.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                        <div style="background: var(--bg-dark); padding: 15px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 2rem; color: var(--secondary);">${data.total_entries}</div>
+                            <div style="color: var(--text-muted); font-size: 0.9rem;">Total Entries</div>
+                        </div>
+                        <div style="background: var(--bg-dark); padding: 15px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 2rem; color: gold;">${data.total_ada_earned}</div>
+                            <div style="color: var(--text-muted); font-size: 0.9rem;">ADA Earned</div>
+                        </div>
+                        <div style="background: var(--bg-dark); padding: 15px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 2rem; color: var(--accent);">${data.average_score}</div>
+                            <div style="color: var(--text-muted); font-size: 0.9rem;">Avg Score</div>
+                        </div>
+                        <div style="background: var(--bg-dark); padding: 15px; border-radius: 10px; text-align: center;">
+                            <div style="font-size: 2rem; color: ${data.can_submit_today ? 'var(--success)' : '#EF4444'};">${data.can_submit_today ? '✓' : '✗'}</div>
+                            <div style="color: var(--text-muted); font-size: 0.9rem;">Can Submit Today</div>
+                        </div>
+                    </div>
+                `;
+
+                statsCard.classList.remove('hidden');
+            } catch (error) {
+                showDiaryStatus('error', 'Error fetching stats: ' + error.message);
+            }
+        }
+
+        // Show diary status message
+        function showDiaryStatus(type, message) {
+            const statusDiv = document.getElementById('diary-status');
+            statusDiv.classList.remove('hidden');
+
+            let bgColor, borderColor;
+            switch (type) {
+                case 'success':
+                    bgColor = 'rgba(16, 185, 129, 0.2)';
+                    borderColor = 'var(--success)';
+                    break;
+                case 'error':
+                    bgColor = 'rgba(239, 68, 68, 0.2)';
+                    borderColor = '#EF4444';
+                    break;
+                case 'warning':
+                    bgColor = 'rgba(245, 158, 11, 0.2)';
+                    borderColor = 'var(--warning)';
+                    break;
+                case 'pending':
+                    bgColor = 'rgba(0, 51, 173, 0.2)';
+                    borderColor = 'var(--primary)';
+                    break;
+                default:
+                    bgColor = 'rgba(148, 163, 184, 0.2)';
+                    borderColor = 'var(--text-muted)';
+            }
+
+            statusDiv.style.background = bgColor;
+            statusDiv.style.border = `1px solid ${borderColor}`;
+            statusDiv.style.padding = '15px';
+            statusDiv.style.borderRadius = '10px';
+            statusDiv.style.whiteSpace = 'pre-wrap';
+            statusDiv.textContent = message;
+        }
+
+        // File to base64 converter
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    // Remove the data:image/xxx;base64, prefix
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Image preview handler
+        document.getElementById('diary_image').addEventListener('change', function(e) {
+            const preview = document.getElementById('image-preview');
+            const file = e.target.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+
+        // Character count handler
+        document.getElementById('diary_content').addEventListener('input', function() {
+            document.getElementById('char-count').textContent = this.value.length;
+        });
+    </script>
+</body>
+</html>

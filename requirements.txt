@@ -1,0 +1,17 @@
+# Google ADK and AI
+google-adk>=1.19.0
+google-genai>=1.52.0
+
+# HTTP client for API calls
+httpx>=0.28.0
+aiohttp>=3.9.0
+
+# Web framework
+fastapi>=0.118.0
+uvicorn[standard]>=0.38.0
+
+# Data validation
+pydantic>=2.0.0
+
+# Environment management
+python-dotenv>=1.0.0
